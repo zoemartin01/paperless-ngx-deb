@@ -1,0 +1,37 @@
+#!/usr/bin/make -f
+
+export DH_VIRTUALENV_INSTALL_ROOT=/usr/lib
+export DH_REQUIREMENTS_FILE=requirements.txt
+
+%:
+	dh $@ --with python-virtualenv --systemd
+
+override_dh_installsystemd:
+	dh_installsystemd --name=paperless-webserver
+	dh_installsystemd --name=paperless-task-queue
+	dh_installsystemd --name=paperless-scheduler
+	dh_installsystemd --name=paperless-consumer
+	dh_installsystemd
+
+override_dh_virtualenv:
+	dh_virtualenv --python=/usr/bin/python3 --builtin-venv -S \
+	  --extras mariadb \
+	  --extras postgres \
+	  --extras webserver \
+	  --extra-pip-arg "--no-cache-dir" \
+	  --extra-pip-arg "--ignore-installed"
+
+override_dh_dwz:
+	:
+
+override_dh_auto_install:
+	dh_auto_install
+	find debian/paperless-ngx -type d -name __pycache__ -prune -exec rm -rf {} +
+	find debian/paperless-ngx -type f -name '*.pyc' -delete
+
+
+override_dh_shlibdeps:
+	dh_shlibdeps -- \
+	  --ignore-missing-info \
+	  $(shell find debian/paperless-ngx/usr/lib/paperless-ngx -type d -name '*.libs' -printf ' -l%p')
+

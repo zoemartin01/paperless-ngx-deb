@@ -1,0 +1,13 @@
+[Unit]
+Description=paperless-ngx
+Wants=paperless-webserver.service
+Wants=paperless-task-queue.service
+Wants=paperless-scheduler.service
+Wants=paperless-consumer.service
+
+After=network-online.target redis-server.service
+Requires=redis-server.service
+
+[Install]
+WantedBy=multi-user.target
+

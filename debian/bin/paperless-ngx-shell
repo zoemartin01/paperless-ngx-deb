@@ -1,0 +1,4 @@
+#!/bin/sh
+set -e
+cd /usr/share/paperless-ngx
+exec /usr/lib/paperless-ngx/bin/python manage.py shell "$@"

@@ -1,0 +1,8 @@
+Template: paperless-ngx/enable-imagemagick-pdf
+Type: boolean
+Default: false
+Description: Enable ImageMagick PDF processing for paperless-ngx?
+ Many distributions disable ImageMagick PDF decoding by default because PDFs can
+ contain malware. If enabled, paperless-ngx may use ImageMagick for operations
+ such as thumbnail generation. If disabled, paperless-ngx will fall back to
+ Ghostscript.

@@ -1,0 +1,27 @@
+[Unit]
+Description=Paperless-ngx webserver
+PartOf=paperless-ngx.target
+
+Wants=network-online.target
+After=network-online.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=paperless
+Group=paperless
+WorkingDirectory=/usr/share/paperless-ngx
+EnvironmentFile=-/etc/paperless.conf
+ExecStart=/bin/sh -c '\
+  [ -n "$PAPERLESS_BIND_ADDR" ] && export GRANIAN_HOST=$PAPERLESS_BIND_ADDR; \
+  [ -n "$PAPERLESS_PORT" ] && export GRANIAN_PORT=$PAPERLESS_PORT; \
+  [ -n "$PAPERLESS_WEBSERVER_WORKERS" ] && export GRANIAN_WORKERS=$PAPERLESS_WEBSERVER_WORKERS; \
+  [ -n "$PAPERLESS_FORCE_SCRIPT_NAME" ] && export GRANIAN_URL_PATH_PREFIX=$PAPERLESS_FORCE_SCRIPT_NAME; \
+  exec /usr/lib/paperless-ngx/bin/granian --interface asginl --ws "paperless.asgi:application"'
+Restart=on-failure
+RestartSec=5s
+StateDirectory=paperless
+LogsDirectory=paperless-ngx
+
+[Install]
+WantedBy=paperless-ngx.target

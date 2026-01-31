@@ -1,0 +1,7 @@
+d /var/lib/paperless 0755 paperless paperless -
+d /var/lib/paperless/data 0755 paperless paperless -
+d /var/lib/paperless/media 0755 paperless paperless -
+d /var/lib/paperless/consume 0755 paperless paperless -
+d /var/lib/paperless/static 0755 paperless paperless -
+d /var/log/paperless-ngx 0755 paperless paperless -
+d /var/tmp/paperless 0755 paperless paperless -

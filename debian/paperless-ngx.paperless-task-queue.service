@@ -1,0 +1,23 @@
+[Unit]
+Description=Paperless-ngx task queue (Celery workers)
+PartOf=paperless-ngx.target
+
+Wants=network-online.target
+After=network-online.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=paperless
+Group=paperless
+WorkingDirectory=/usr/share/paperless-ngx
+EnvironmentFile=-/etc/paperless.conf
+ExecStart=/usr/lib/paperless-ngx/bin/celery --app paperless worker --loglevel INFO
+Restart=on-failure
+RestartSec=5s
+StateDirectory=paperless
+LogsDirectory=paperless-ngx
+
+[Install]
+WantedBy=paperless-ngx.target
+

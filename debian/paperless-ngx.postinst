@@ -1,0 +1,132 @@
+#!/bin/sh
+set -e
+
+CONF=/etc/paperless.conf
+. /usr/share/debconf/confmodule || true
+
+remove_diversion() {
+  target="$1"
+  divert="${target}.paperless-ngx"
+
+  dpkg-divert --list "$target" 2>/dev/null | grep -q 'paperless-ngx' || return 0
+
+  if [ -e "$target" ]; then
+    if [ -e "$divert" ] && cmp -s "$target" "$divert"; then
+      rm -f "$target"
+    else
+      backup="${target}.paperless-ngx.disabled"
+      if [ -e "$backup" ]; then
+        backup="${target}.paperless-ngx.disabled.$(date +%s)"
+      fi
+      mv -f "$target" "$backup"
+    fi
+  fi
+
+  dpkg-divert --package paperless-ngx --remove --rename --divert "$divert" "$target"
+}
+
+
+
+case "$1" in
+  configure)
+    if ! getent group paperless >/dev/null; then
+      addgroup --system paperless
+    fi
+
+    if ! getent passwd paperless >/dev/null; then
+      adduser --system --ingroup paperless \
+        --home /var/lib/paperless --no-create-home \
+        --shell /usr/sbin/nologin paperless
+    fi
+
+    install -d -o paperless -g paperless -m 0755 /var/lib/paperless
+    install -d -o paperless -g paperless -m 0755 /var/log/paperless-ngx
+    install -d -o paperless -g paperless -m 0755 /var/tmp/paperless
+
+    if [ -f "$CONF" ]; then
+      if ! grep -q '^PAPERLESS_SECRET_KEY=' "$CONF" || grep -q '^PAPERLESS_SECRET_KEY=$' "$CONF"; then
+        KEY="$(/usr/bin/python3 -c 'import secrets; print(secrets.token_urlsafe(50))')"
+        if grep -q '^PAPERLESS_SECRET_KEY=' "$CONF"; then
+          sed -i "s|^PAPERLESS_SECRET_KEY=.*|PAPERLESS_SECRET_KEY=$KEY|" "$CONF"
+        else
+          printf '\nPAPERLESS_SECRET_KEY=%s\n' "$KEY" >>"$CONF"
+        fi
+      fi
+    fi
+
+    detect_im_policy() {
+      if command -v convert >/dev/null 2>&1; then
+        convert -list policy 2>/dev/null | sed -n 's/^Path: //p' | head -n1
+        return
+      fi
+
+      for p in /etc/ImageMagick-6/policy.xml /etc/ImageMagick-7/policy.xml /etc/ImageMagick/policy.xml; do
+        [ -f "$p" ] && { echo "$p"; return; }
+      done
+    }
+
+    im_policy_set_pdf_rights() {
+      POLICY="$(detect_im_policy)"
+      [ -n "$POLICY" ] || return 0
+      [ -f "$POLICY" ] || return 0
+
+      DIVERT="${POLICY}.paperless-ngx"
+
+      if ! dpkg-divert --list "$POLICY" 2>/dev/null | grep -q 'paperless-ngx'; then
+        dpkg-divert --package paperless-ngx --add --rename --divert "$DIVERT" "$POLICY"
+        cp -a "$DIVERT" "$POLICY"
+        chown root:root "$POLICY"
+        chmod 0644 "$POLICY"
+      fi
+      POLICY="$POLICY" python3 <<'PY'
+import os,re,pathlib
+policy=pathlib.Path(os.environ["POLICY"])
+tag='<policy domain="coder" rights="read|write" pattern="PDF" />\n'
+xml=policy.read_text()
+r=re.compile(r'<policy\b(?=[^>]*\bdomain=["\']coder["\'])(?=[^>]*\bpattern=["\']PDF["\'])[^>]*/>\s*', re.I)
+policy.write_text(r.sub(tag, xml) if r.search(xml) else re.sub(r'(<policymap\b[^>]*>)', r'\1\n  ' + tag.strip(), xml, count=1, flags=re.I))
+PY
+    }
+
+    im_policy_restore_original() {
+      POLICY="$(detect_im_policy)"
+      [ -n "$POLICY" ] || return 0
+      remove_diversion "$POLICY" || true
+    }
+
+
+    db_get paperless-ngx/enable-imagemagick-pdf || RET=false
+    if [ "$RET" = "true" ]; then
+      im_policy_set_pdf_rights || true
+    else
+      im_policy_restore_original || true
+    fi
+
+
+    run_as_paperless() {
+      su -s /bin/sh paperless -c ". '$CONF' 2>/dev/null || true; \
+        : \"\${PAPERLESS_DATA_DIR:=/var/lib/paperless/data}\"; \
+        : \"\${PAPERLESS_MEDIA_ROOT:=/var/lib/paperless/media}\"; \
+        : \"\${PAPERLESS_CONSUMPTION_DIR:=/var/lib/paperless/consume}\"; \
+        : \"\${PAPERLESS_STATICDIR:=/var/lib/paperless/static}\"; \
+        : \"\${PAPERLESS_CONVERT_TMPDIR:=/var/tmp/paperless}\"; \
+        install -d -m 0755 \"\$PAPERLESS_DATA_DIR\" \"\$PAPERLESS_MEDIA_ROOT\" \"\$PAPERLESS_CONSUMPTION_DIR\" \"\$PAPERLESS_STATICDIR\" \"\$PAPERLESS_CONVERT_TMPDIR\"; \
+        exec $*"
+    }
+
+    if ! run_as_paperless /usr/bin/paperless-ngx-manage collectstatic --noinput; then
+      echo "paperless-ngx: WARNING: collectstatic failed; you may need to run:" >&2
+      echo "  sudo -u paperless /usr/bin/paperless-ngx-manage collectstatic --noinput" >&2
+    fi
+
+    if ! run_as_paperless /usr/bin/paperless-ngx-manage migrate; then
+      echo "paperless-ngx: WARNING: migrate failed; you may need to run:" >&2
+      echo "  sudo -u paperless /usr/bin/paperless-ngx-manage migrate" >&2
+    fi
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0
+

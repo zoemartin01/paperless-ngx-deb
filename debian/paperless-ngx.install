@@ -1,0 +1,4 @@
+src/* usr/share/paperless-ngx/
+debian/paperless.conf etc/
+debian/bin/paperless-ngx-manage usr/bin/
+debian/bin/paperless-ngx-shell usr/bin/

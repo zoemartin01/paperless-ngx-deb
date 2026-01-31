@@ -1,0 +1,55 @@
+Source: paperless-ngx
+Section: web
+Priority: optional
+Maintainer: Zoë Martin <zoe@zvm.sh>
+Rules-Requires-Root: no
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-virtualenv,
+ python3,
+ python3-venv,
+ python3-dev,
+ python3-pip,
+ python3-wheel,
+ build-essential,
+ pkg-config,
+ libpq-dev,
+ libmagic-dev,
+ default-libmysqlclient-dev,
+ libxml2-dev,
+ zlib1g-dev,
+ libzbar-dev
+Standards-Version: 4.6.2
+Homepage: https://docs.paperless-ngx.com/
+
+Package: paperless-ngx
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+ python3,
+ debconf | debconf-2.0,
+ adduser,
+ redis-server,
+ ghostscript,
+ tesseract-ocr,
+ tesseract-ocr-eng,
+ poppler-utils,
+ imagemagick,
+ fonts-liberation,
+ libmagic1,
+ libzbar0t64,
+ unpaper,
+ icc-profiles-free,
+ qpdf
+Recommends:
+ pngquant,
+ optipng
+Suggests:
+ tesseract-ocr-deu,
+ nginx | apache2
+Description: Paperless-ngx document management system (bare-metal omnibus 
+ package) Paperless-ngx is a document management system for scanning, indexing, 
+ and archiving. This package ships paperless-ngx plus a bundled Python
+ virtualenv.
+

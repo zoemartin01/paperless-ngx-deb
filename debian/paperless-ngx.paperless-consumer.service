@@ -1,0 +1,22 @@
+[Unit]
+Description=Paperless-ngx consumer
+PartOf=paperless-ngx.target
+
+Wants=network-online.target
+After=network-online.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=paperless
+Group=paperless
+WorkingDirectory=/usr/share/paperless-ngx
+EnvironmentFile=-/etc/paperless.conf
+ExecStart=/usr/lib/paperless-ngx/bin/python manage.py document_consumer
+Restart=on-failure
+RestartSec=5s
+StateDirectory=paperless
+LogsDirectory=paperless-ngx
+
+[Install]
+WantedBy=paperless-ngx.target
