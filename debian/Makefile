@@ -67,7 +67,7 @@ help:
 	  '        - commits + tags debian/$(VERSION)-$(DEB_REV)' \
 	  '        - runs: make orig VERSION=$(VERSION)' \
 	  '      Next:' \
-	  '        make build VERSION=$(VERSION)' \
+	  '        make build' \
 	  '' \
 	  '  make build' \
 	  '      Build overlay package from branch $(DEBIAN_BRANCH):' \
@@ -173,7 +173,7 @@ release: sanity checkout clean-tree
 	@git commit -m "Release $(FULL_VERSION)"
 	@git tag -a debian/$(FULL_VERSION) -m "Release $(FULL_VERSION)"
 	@$(MAKE) -f debian/Makefile orig VERSION="$(VERSION)"
-	@echo "Release commit created. Next: make build VERSION=$(VERSION)"
+	@echo "Release commit created. Next: make -f debian/Makefile build"
 
 .PHONY: build
 build: sanity checkout clean-tree

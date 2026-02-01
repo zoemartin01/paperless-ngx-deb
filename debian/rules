@@ -4,7 +4,10 @@ export DH_VIRTUALENV_INSTALL_ROOT=/usr/lib
 export DH_REQUIREMENTS_FILE=requirements.txt
 
 %:
-	dh $@ --with python-virtualenv --systemd
+	dh $@ --with python-virtualenv
+
+execute_before_dh_installtmpfiles:
+	dh_installsysusers
 
 override_dh_installsystemd:
 	dh_installsystemd --name=paperless-webserver

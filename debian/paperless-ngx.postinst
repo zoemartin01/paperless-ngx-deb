@@ -29,20 +29,6 @@ remove_diversion() {
 
 case "$1" in
   configure)
-    if ! getent group paperless >/dev/null; then
-      addgroup --system paperless
-    fi
-
-    if ! getent passwd paperless >/dev/null; then
-      adduser --system --ingroup paperless \
-        --home /var/lib/paperless --no-create-home \
-        --shell /usr/sbin/nologin paperless
-    fi
-
-    install -d -o paperless -g paperless -m 0755 /var/lib/paperless
-    install -d -o paperless -g paperless -m 0755 /var/log/paperless-ngx
-    install -d -o paperless -g paperless -m 0755 /var/tmp/paperless
-
     if [ -f "$CONF" ]; then
       if ! grep -q '^PAPERLESS_SECRET_KEY=' "$CONF" || grep -q '^PAPERLESS_SECRET_KEY=$' "$CONF"; then
         KEY="$(/usr/bin/python3 -c 'import secrets; print(secrets.token_urlsafe(50))')"
@@ -94,7 +80,6 @@ PY
       remove_diversion "$POLICY" || true
     }
 
-
     db_get paperless-ngx/enable-imagemagick-pdf || RET=false
     if [ "$RET" = "true" ]; then
       im_policy_set_pdf_rights || true
@@ -102,31 +87,33 @@ PY
       im_policy_restore_original || true
     fi
 
+    #DEBHELPER#
 
-    run_as_paperless() {
-      su -s /bin/sh paperless -c ". '$CONF' 2>/dev/null || true; \
-        : \"\${PAPERLESS_DATA_DIR:=/var/lib/paperless/data}\"; \
-        : \"\${PAPERLESS_MEDIA_ROOT:=/var/lib/paperless/media}\"; \
-        : \"\${PAPERLESS_CONSUMPTION_DIR:=/var/lib/paperless/consume}\"; \
-        : \"\${PAPERLESS_STATICDIR:=/var/lib/paperless/static}\"; \
-        : \"\${PAPERLESS_CONVERT_TMPDIR:=/var/tmp/paperless}\"; \
-        install -d -m 0755 \"\$PAPERLESS_DATA_DIR\" \"\$PAPERLESS_MEDIA_ROOT\" \"\$PAPERLESS_CONSUMPTION_DIR\" \"\$PAPERLESS_STATICDIR\" \"\$PAPERLESS_CONVERT_TMPDIR\"; \
-        exec $*"
-    }
-
-    if ! run_as_paperless /usr/bin/paperless-ngx-manage collectstatic --noinput; then
-      echo "paperless-ngx: WARNING: collectstatic failed; you may need to run:" >&2
-      echo "  sudo -u paperless /usr/bin/paperless-ngx-manage collectstatic --noinput" >&2
+    db_input high paperless-ngx/run-migrations || true
+    db_input high paperless-ngx/run-collectstatic || true
+    db_go || true
+    
+    db_get paperless-ngx/run-migrations || RET=false
+    if [ "$RET" = "true" ]; then
+      if su -s /bin/sh -c '/usr/bin/paperless-ngx-manage migrate' paperless; then
+        db_set paperless-ngx/run-migrations false || true
+      else
+        echo "paperless-ngx: migrate failed; run manually: paperless-ngx-manage migrate" >&2
+      fi
+    fi
+    
+    db_get paperless-ngx/run-collectstatic || RET=false
+    if [ "$RET" = "true" ]; then
+      if su -s /bin/sh -c '/usr/bin/paperless-ngx-manage collectstatic --noinput' paperless; then
+        db_set paperless-ngx/run-collectstatic false || true
+      else
+        echo "paperless-ngx: collectstatic failed; run manually: paperless-ngx-manage collectstatic --noinput" >&2
+      fi
     fi
 
-    if ! run_as_paperless /usr/bin/paperless-ngx-manage migrate; then
-      echo "paperless-ngx: WARNING: migrate failed; you may need to run:" >&2
-      echo "  sudo -u paperless /usr/bin/paperless-ngx-manage migrate" >&2
-    fi
     ;;
 esac
 
-#DEBHELPER#
 
 exit 0
 

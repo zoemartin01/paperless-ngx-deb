@@ -29,7 +29,6 @@ Depends:
  ${shlibs:Depends},
  python3,
  debconf | debconf-2.0,
- adduser,
  redis-server,
  ghostscript,
  tesseract-ocr,

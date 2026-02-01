@@ -1,4 +1,11 @@
 #!/bin/sh
 set -e
 cd /usr/share/paperless-ngx
-exec /usr/lib/paperless-ngx/bin/python manage.py shell "$@"
+
+PY=/usr/lib/paperless-ngx/bin/python
+
+if [ "$(id -u)" -eq 0 ]; then
+  exec runuser -u paperless -- "$PY" manage.py shell "$@"
+fi
+
+exec "$PY" manage.py "$@"

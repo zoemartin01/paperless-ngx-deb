@@ -6,3 +6,20 @@ Description: Enable ImageMagick PDF processing for paperless-ngx?
  contain malware. If enabled, paperless-ngx may use ImageMagick for operations
  such as thumbnail generation. If disabled, paperless-ngx will fall back to
  Ghostscript.
+
+Template: paperless-ngx/run-migrations
+Type: boolean
+Default: false
+Description: Run Paperless-ngx database migrations now?
+ Django database migrations may take a while and require a reachable database.
+ If you are unsure, choose No and run migrations later with:
+   paperless-ngx-manage migrate
+
+Template: paperless-ngx/run-collectstatic
+Type: boolean
+Default: false
+Description: Run Paperless-ngx collectstatic now?
+ Django collectstatic will copy static assets into the configured STATIC_ROOT.
+ This may take a while and may overwrite files in STATIC_ROOT.
+ If you are unsure, choose No and run it later with:
+   paperless-ngx-manage collectstatic --noinput
