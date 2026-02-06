@@ -1,0 +1,57 @@
+From e9e138e62cae6cb4c9dac0c5992040c5d02b8985 Mon Sep 17 00:00:00 2001
+From: Gabgobie <105999094+Gabgobie@users.noreply.github.com>
+Date: Mon, 26 Jan 2026 19:31:01 +0100
+Subject: [PATCH] Enhancement: configurable SSO groups claim (#11841)
+Origin: upstream, https://github.com/paperless-ngx/paperless-ngx/commit/e9e138e62cae6cb4c9dac0c5992040c5d02b8985
+Forwarded: not-needed
+
+---------
+
+Co-authored-by: shamoon <4887959+shamoon@users.noreply.github.com>
+---
+ src/paperless/settings.py |  5 +++++
+ src/paperless/signals.py  | 10 +++++++---
+ 3 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/src/paperless/settings.py b/src/paperless/settings.py
+index 532a2bc36e..9ad0fea4d7 100644
+--- a/src/paperless/settings.py
++++ b/src/paperless/settings.py
+@@ -518,6 +518,10 @@
+ )
+ SOCIAL_ACCOUNT_DEFAULT_GROUPS = __get_list("PAPERLESS_SOCIAL_ACCOUNT_DEFAULT_GROUPS")
+ SOCIAL_ACCOUNT_SYNC_GROUPS = __get_boolean("PAPERLESS_SOCIAL_ACCOUNT_SYNC_GROUPS")
++SOCIAL_ACCOUNT_SYNC_GROUPS_CLAIM: Final[str] = os.getenv(
++    "PAPERLESS_SOCIAL_ACCOUNT_SYNC_GROUPS_CLAIM",
++    "groups",
++)
+ 
+ MFA_TOTP_ISSUER = "Paperless-ngx"
+
+diff --git a/src/paperless/signals.py b/src/paperless/signals.py
+index cfad29dbd0..1ed88c0518 100644
+--- a/src/paperless/signals.py
++++ b/src/paperless/signals.py
+@@ -40,15 +40,19 @@
+ 
+     extra_data = sociallogin.account.extra_data or {}
+     social_account_groups = extra_data.get(
+-        "groups",
++        settings.SOCIAL_ACCOUNT_SYNC_GROUPS_CLAIM,
+         [],
+     )  # pre-allauth 65.11.0 structure
+ 
+     if not social_account_groups:
+         # allauth 65.11.0+ nests claims under `userinfo`/`id_token`
+         social_account_groups = (
+-            extra_data.get("userinfo", {}).get("groups")
+-            or extra_data.get("id_token", {}).get("groups")
++            extra_data.get("userinfo", {}).get(
++                settings.SOCIAL_ACCOUNT_SYNC_GROUPS_CLAIM,
++            )
++            or extra_data.get("id_token", {}).get(
++                settings.SOCIAL_ACCOUNT_SYNC_GROUPS_CLAIM,
++            )
+             or []
+         )
+     if settings.SOCIAL_ACCOUNT_SYNC_GROUPS and social_account_groups is not None:
