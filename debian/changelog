@@ -1,3 +1,9 @@
+paperless-ngx (2.20.8-1) trixie; urgency=medium
+
+  * New upstream release.
+
+ -- Zoë Martin <zoe@zvm.sh>  Thu, 26 Feb 2026 12:50:59 +0000
+
 paperless-ngx (2.20.6-2) trixie; urgency=medium
 
   * Backport of custom OIDC Group claim setting
