@@ -1,3 +1,9 @@
+paperless-ngx (2.20.10-1) trixie; urgency=medium
+
+  * New upstream release.
+
+ -- Zoë Martin <zoe@zvm.sh>  Wed, 11 Mar 2026 09:18:17 +0000
+
 paperless-ngx (2.20.9-1) trixie; urgency=medium
 
   * New upstream release.
